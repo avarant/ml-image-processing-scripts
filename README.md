@@ -1,2 +1,2 @@
 # ml-image-processing-scripts
-uses opencv to generate bounding boxes around for faces
+uses opencv to detect faces and generate csv file containing list of bounding boxes
