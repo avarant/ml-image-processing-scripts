@@ -2,3 +2,5 @@ data/
 out/
 faces.csv
 demo.py
+.vscode/
+cropped/

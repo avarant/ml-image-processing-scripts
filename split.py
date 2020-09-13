@@ -1,32 +1,19 @@
 import os
 import sys
-import random
 import shutil
 import argparse
 import csv
-from itertools import islice
-from itertools import chain
-from time import sleep
-
-
-def copy(loc, dest, files):
-    n = len(files)
-    i = 0
-    for file in files:
-        shutil.copy(os.path.join(loc, file), os.path.join(dest, file))
-        i += 1
-        print("Moving file %d/%d     " % (i, n), end="\r", flush=True)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="splits images into random partitions")
-    parser.add_argument("images", help="path to directory containing images")
+        description="randomly samples files and splits into train and valid")
+    parser.add_argument("images", help="path to directory containing files")
     parser.add_argument("csv", help="path to csv file containing labels")
     parser.add_argument("-l", "--labels", nargs='+', type=str,
-                        help="creates a subfolder in train and valid for each label", required=True)
+                        help="only copies files with given labels")
     parser.add_argument("-s", "--size", type=float,
-                        help="train percentage (between 0 and 1)")
+                        help="size of training set (between 0 and 1)")
     parser.add_argument("-o", "--out", help="name of output directory")
     args = parser.parse_args()
 
@@ -52,22 +39,28 @@ def main():
 
     os.chdir(out)
 
-    print("creating directories")
+    # create directories
     for sub_dir in sub_dirs:
         os.makedirs(sub_dir)
-        for lbl in args.labels:
-            os.makedirs(sub_dir + "/" + lbl)
+        if args.labels:
+            for lbl in args.labels:
+                os.makedirs(sub_dir + "/" + lbl)
 
     os.chdir(cwd)
 
+    # get field names and csv length
     with open(args.csv) as fp:
         reader = csv.reader(fp, delimiter=",", quotechar='"')
         fields = next(reader, None)
         indexName = fields.index('name')
         indexClass = fields.index('classname')
-        n = sum(1 for row in reader if row[indexClass] in args.labels)
+        if args.labels:
+            n = sum(1 for row in reader if row[indexClass] in args.labels)
+        else:
+            n = sum(1 for row in reader)
         ntrain = int(train_size * n)
 
+    # read csv
     with open(args.csv) as fp:
         reader = csv.reader(fp, delimiter=",", quotechar='"')
 
@@ -76,21 +69,24 @@ def main():
         else:
             gen = (row for row in reader)
 
-        print("copying files")
-
+        # copy files
         i = 0
         for row in gen:
             name = row[indexName]
             label = row[indexClass]
+            path = os.path.join(args.images, name)
 
-            if os.path.isfile(os.path.join(args.images, name)):
-                dest = "%s/%s/%s/%s" % (out, "train" if i <
-                                        ntrain else "valid", label, name)
-                shutil.copy(os.path.join(args.images, name), dest)
+            if os.path.isfile(path):
+                dest = "%s/%s/%s" % (out, "train" if i <
+                                     ntrain else "valid", label)
+                if not os.path.isdir(dest):
+                    os.mkdir(dest)
+
+                shutil.copy(path, "%s/%s" % (dest, name))
                 i += 1
-                print("%d/%d" % (i, n), end="\r", flush=True)
+                print("copying file %d/%d     " % (i, n), end="\r", flush=True)
 
-        print("\ndone")
+        print()
 
 
 if __name__ == "__main__":

@@ -29,23 +29,24 @@ def main():
 
     with open(args.csv) as fp:
         reader = csv.reader(fp, delimiter=",", quotechar='"')
-        next(reader, None)
+
+        fields = next(reader, None)
+        indexName = fields.index('name')
+
+        if args.labels and 'classname' in fields:
+            indexClass = fields.index('classname')
+
         row_count = sum(1 for row in reader)
 
     # read csv file
     with open(args.csv) as fp:
         reader = csv.reader(fp, delimiter=",", quotechar='"')
-
-        fields = next(reader, None)
-        indexName = fields.index('name')
-        indexClass = fields.index('classname')
+        next(reader, None)
 
         if args.labels:
             gen = (row for row in reader if row[indexClass] in args.labels)
         else:
             gen = (row for row in reader)
-
-        print("cropping images (original images are not modified)")
 
         i = 0
         for row in gen:
@@ -63,9 +64,9 @@ def main():
                     out, "%s_%d.%s" % (name, i, ext)))
 
             i += 1
-            print("%d/%d" % (i, row_count), end="\r", flush=True)
+            print("cropping image %d/%d    " % (i, row_count), end="\r", flush=True)
 
-        print("done")
+        print()
 
 
 if __name__ == "__main__":
