@@ -1,6 +1,5 @@
 import os
 import sys
-import random
 import csv
 import argparse
 import shutil
